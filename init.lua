@@ -108,10 +108,10 @@ local on_attach = function(client, bufnr)
   buf_set_keymap("n", "<leader>rn", "<cmd>lua vim.lsp.buf.rename()<CR>", opts)
   buf_set_keymap("n", "<leader>ca", "<cmd>lua vim.lsp.buf.code_action()<CR>", opts)
   buf_set_keymap("n", "gr", "<cmd>lua vim.lsp.buf.references()<CR>", opts)
-  buf_set_keymap("n", "<leader>e", "<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>", opts)
-  buf_set_keymap("n", "[d", "<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>", opts)
-  buf_set_keymap("n", "]d", "<cmd>lua vim.lsp.diagnostic.goto_next()<CR>", opts)
-  buf_set_keymap("n", "<leader>q", "<cmd>lua vim.lsp.diagnostic.set_loclist()<CR>", opts)
+  buf_set_keymap("n", "<leader>e", "<cmd>lua vim.diagnostic.open_float(nil, { source = 'always' })<CR>", opts)
+  buf_set_keymap("n", "[d", "<cmd>lua vim.diagnostic.goto_prev()<CR>", opts)
+  buf_set_keymap("n", "]d", "<cmd>lua vim.diagnostic.goto_next()<CR>", opts)
+  buf_set_keymap("n", "<leader>q", "<cmd>lua vim.diagnostic.set_loclist()<CR>", opts)
 
   -- client.resolved_capabilities.document_formatting = false
 end
@@ -144,69 +144,6 @@ require("lspconfig").tsserver.setup({
 require("lspconfig").intelephense.setup({
   settings = {
     intelephense = {
-      --[[   stubs = { 
-                "bcmath",
-                "bz2",
-                "calendar",
-                "Core",
-                "curl",
-                "date",
-                "dba",
-                "dom",
-                "enchant",
-                "fileinfo",
-                "filter",
-                "ftp",
-                "gd",
-                "gettext",
-                "hash",
-                "iconv",
-                "imap",
-                "intl",
-                "json",
-                "ldap",
-                "libxml",
-                "mbstring",
-                "mcrypt",
-                "mysql",
-                "mysqli",
-                "password",
-                "pcntl",
-                "pcre",
-                "PDO",
-                "pdo_mysql",
-                "Phar",
-                "readline",
-                "recode",
-                "Reflection",
-                "regex",
-                "session",
-                "SimpleXML",
-                "soap",
-                "sockets",
-                "sodium",
-                "SPL",
-                "standard",
-                "superglobals",
-                "sysvsem",
-                "sysvshm",
-                "tokenizer",
-                "xml",
-                "xdebug",
-                "xmlreader",
-                "xmlwriter",
-                "yaml",
-                "zip",
-                "zlib",
-                "wordpress",
-                "woocommerce",
-                "acf-pro",
-                "wordpress-globals",
-                "wp-cli",
-                "genesis",
-                "polylang"
-            },]]
-      --
       files = {
         maxSize = 5000000,
       },
@@ -216,11 +153,13 @@ require("lspconfig").intelephense.setup({
   on_attach = on_attach,
 })
 
+require("lspconfig").pyright.setup({})
+
 -- LSP Prevents inline buffer annotations
-vim.lsp.diagnostic.show_line_diagnostics()
-vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
-  virtual_text = false,
-})
+-- vim.diagnostic.open_float(nil, { source = 'always' })
+-- vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
+--  virtual_text = false,
+-- })
 
 -- LSP Saga config & keys https://github.com/glepnir/lspsaga.nvim
 local saga = require("lspsaga")
@@ -318,7 +257,7 @@ require("lualine").setup({
       { "diff", color_added = "#a7c080", color_modified = "#ffdf1b", color_removed = "#ff6666" },
     },
     lualine_c = {
-      { "diagnostics", sources = { "nvim_lsp" } },
+      { "diagnostics", sources = { "nvim_diagnostic" } },
       function()
         return "%="
       end,
@@ -353,6 +292,9 @@ require("lualine").setup({
 -- Give me some fenced codeblock goodness
 g.markdown_fenced_languages = { "html", "javascript", "typescript", "css", "scss", "lua", "vim" }
 
+-- Let me know about trouble
+require("trouble").setup()
+
 -- Telescope Global remapping
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
@@ -382,6 +324,7 @@ require("telescope").setup({
     },
     -- https://gitter.im/nvim-telescope/community?at=6113b874025d436054c468e6 Fabian David Schmidt
     find_files = {
+      hidden = true,
       on_input_filter_cb = function(prompt)
         local find_colon = string.find(prompt, ":")
         if find_colon then
@@ -419,6 +362,7 @@ require("telescope").setup({
 })
 
 require("telescope").load_extension("fzy_native")
+require("telescope").load_extension("file_browser")
 
 -------------------- COMMANDS ------------------------------
 cmd("au TextYankPost * lua vim.highlight.on_yank {on_visual = true}") -- disabled in visual mode
@@ -462,15 +406,17 @@ cmp.setup({
   },
   experimental = {
     ghost_text = true,
-    native_menu = true,
   },
+  view = {
+    entries = "native"
+  }
 })
 
 -- Setup lspconfig.
 -- Here is the formatting config
 local null_ls = require("null-ls")
 local lSsources = {
-  null_ls.builtins.formatting.prettier.with({
+  --[[ null_ls.builtins.formatting.prettier.with({
     filetypes = {
       "javascript",
       "typescript",
@@ -484,16 +430,18 @@ local lSsources = {
       "md",
       "txt",
     },
-  }),
+  }), --]]
   null_ls.builtins.formatting.stylua.with({
     args = { "--indent-width", "2", "--indent-type", "Spaces", "-" },
   }),
+  null_ls.builtins.formatting.phpcsfixer.with({
+    args = { "--rules=@PSR12", "--no-interaction", "--quiet", "fix", "$FILENAME" },
+  }),
 }
-require("null-ls").config({
+require("null-ls").setup({
   sources = lSsources,
 })
 require("lspconfig")["null-ls"].setup({})
--- the duration in there is to stop timeouts on massive files
-vim.cmd("autocmd BufWritePost * lua vim.lsp.buf.formatting_seq_sync(nil, 7500)")
+
 
 require("mappings")

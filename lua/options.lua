@@ -37,4 +37,5 @@ opt.mouse = "a"
 opt.guicursor = "n-v-c-sm:block-blinkwait50-blinkon50-blinkoff50,i-ci-ve:ver25-Cursor-blinkon100-blinkoff100,r-cr-o:hor20"
 opt.undodir = vim.fn.stdpath("config") .. "/undo"
 opt.undofile = true
+opt.smartindent = true
 

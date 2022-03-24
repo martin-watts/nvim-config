@@ -22,6 +22,7 @@ map("n", "<leader>cn", ":Lspsaga diagnostic_jump_next<CR>", { silent = true })
 map("n", "<leader>cp", ":Lspsaga diagnostic_jump_prev<CR>", { silent = true })
 map("n", "<leader>cr", ":Lspsaga rename<CR>", { silent = true })
 map("n", "<leader>cd", ":Lspsaga preview_definition<CR>", { silent = true })
+map("n", "<leader>ff", "<cmd>lua vim.lsp.buf.formatting_seq_sync(nil, 7500)<CR>")
 
 -- Open nvimrc file
 map("n", "<Leader>v", "<cmd>e $MYVIMRC<CR>")
@@ -82,7 +83,7 @@ map(
   "<leader>p",
   '<cmd>lua require("telescope.builtin").find_files(require("telescope.themes").get_dropdown({}))<cr>'
 )
-map("n", "<leader>r", '<cmd>lua require("telescope.builtin").registers()<cr>')
+map("n", "<leader>r", '<cmd>lua require("telescope.builtin").treesitter()<cr>')
 map(
   "n",
   "<leader>g",
@@ -93,7 +94,7 @@ map("n", "<leader>j", '<cmd>lua require("telescope.builtin").help_tags()<cr>')
 map(
   "n",
   "<leader>f",
-  '<cmd>lua require("telescope.builtin").file_browser(require("telescope.themes").get_dropdown({}))<cr>'
+  '<cmd>lua require("telescope").extensions.file_browser.file_browser({ path = "%:p:h", grouped = true, select_buffer = true, hidden = true })<cr>'
 )
 map("n", "<leader>s", '<cmd>lua require("telescope.builtin").spell_suggest()<cr>')
 map(
