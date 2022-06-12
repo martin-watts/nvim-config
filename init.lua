@@ -17,13 +17,6 @@ require("nvim-tree").setup()
 
 require("Comment").setup()
 
-require("nvim-autopairs").setup({})
-
--- If you want insert `(` after select function or method item
-local cmp_autopairs = require("nvim-autopairs.completion.cmp")
-local cmp = require("cmp")
-cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done({ map_char = { tex = "" } }))
-
 require("range-highlight").setup({})
 
 require("nvim-treesitter.configs").setup({
@@ -147,6 +140,9 @@ require("lspconfig").intelephense.setup({
       files = {
         maxSize = 5000000,
       },
+      format = {
+        enable = false,
+      },
     },
   },
   capabilities = require("cmp_nvim_lsp").update_capabilities(vim.lsp.protocol.make_client_capabilities()),
@@ -177,7 +173,7 @@ saga.init_lsp_saga({
 
 -- Setup treesitter
 local ts = require("nvim-treesitter.configs")
-ts.setup({ ensure_installed = "maintained", highlight = { enable = true } })
+ts.setup({ ensure_installed = { "bash", "css", "html", "javascript", "lua", "php", "python", "rust", "typescript", "yaml" }, highlight = { enable = true } })
 
 -- vscode colour scheme setup
 vim.g.vscode_style = "dark"
@@ -364,6 +360,40 @@ require("telescope").setup({
 require("telescope").load_extension("fzy_native")
 require("telescope").load_extension("file_browser")
 
+
+-- Utilities for creating configurations
+local util = require "formatter.util"
+
+-- Provides the Format and FormatWrite commands
+require('formatter').setup {
+  -- All formatter configurations are opt-in
+  filetype = {
+    lua = {
+      -- Pick from defaults:
+      require('formatter.filetypes.lua').stylua,
+    },
+    json = {
+      require('formatter.filetypes.json').prettier,
+    },
+    php = {
+      function()
+        return {
+          exe = 'php-cs-fixer',
+          args = {
+            'fix',
+            '--config',
+            '/users/martinw/.php-cs-fixer.php'
+          },
+          stdin = true
+        }
+      end
+    },
+    python = {
+      require('formatter.filetypes.python').autopep8,
+    },
+  }
+}
+
 -------------------- COMMANDS ------------------------------
 cmd("au TextYankPost * lua vim.highlight.on_yank {on_visual = true}") -- disabled in visual mode
 
@@ -411,37 +441,5 @@ cmp.setup({
     entries = "native"
   }
 })
-
--- Setup lspconfig.
--- Here is the formatting config
-local null_ls = require("null-ls")
-local lSsources = {
-  --[[ null_ls.builtins.formatting.prettier.with({
-    filetypes = {
-      "javascript",
-      "typescript",
-      "css",
-      "scss",
-      "html",
-      "json",
-      "yaml",
-      "markdown",
-      "graphql",
-      "md",
-      "txt",
-    },
-  }), --]]
-  null_ls.builtins.formatting.stylua.with({
-    args = { "--indent-width", "2", "--indent-type", "Spaces", "-" },
-  }),
-  null_ls.builtins.formatting.phpcsfixer.with({
-    args = { "--rules=@PSR12", "--no-interaction", "--quiet", "fix", "$FILENAME" },
-  }),
-}
-require("null-ls").setup({
-  sources = lSsources,
-})
-require("lspconfig")["null-ls"].setup({})
-
 
 require("mappings")
