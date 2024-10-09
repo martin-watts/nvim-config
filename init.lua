@@ -123,13 +123,18 @@ require("lspconfig").cssls.setup({
       },
     },
   },
-  capabilities = require("cmp_nvim_lsp").update_capabilities(vim.lsp.protocol.make_client_capabilities()),
+  capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
   on_attach = on_attach,
 })
 
-require("lspconfig").tsserver.setup({
-  capabilities = require("cmp_nvim_lsp").update_capabilities(vim.lsp.protocol.make_client_capabilities()),
+require("lspconfig").ts_ls.setup({
+  capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
   on_attach = on_attach,
+  filetypes = { "javascript", "typescript", "typescriptreact", "typescript.tsx" },
+  cmd = {
+    "/Users/martin.watts/.nvm/versions/node/v20.9.0/bin/typescript-language-server",
+    "--stdio",
+  }
 })
 
 require("lspconfig").intelephense.setup({
@@ -143,7 +148,7 @@ require("lspconfig").intelephense.setup({
       },
     },
   },
-  capabilities = require("cmp_nvim_lsp").update_capabilities(vim.lsp.protocol.make_client_capabilities()),
+  capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
   on_attach = on_attach,
 })
 
@@ -171,7 +176,10 @@ saga.init_lsp_saga({
 
 -- Setup treesitter
 local ts = require("nvim-treesitter.configs")
-ts.setup({ ensure_installed = { "bash", "css", "html", "javascript", "lua", "php", "python", "rust", "typescript", "yaml" }, highlight = { enable = true } })
+ts.setup({ ensure_installed = { "bash", "css", "html", "lua", "php", "python", "rust", "typescript", "tsx", "yaml" }, highlight = { enable = true } })
+
+local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+parser_config.tsx.filetype_to_parsername = { "javascript", "tsx" }
 
 -- vscode colour scheme setup
 vim.g.vscode_style = "dark"
