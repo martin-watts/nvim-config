@@ -446,3 +446,4 @@ require('ufo').setup({
         return {'treesitter', 'indent'}
     end
 })
+cmd("au BufNewFile,BufRead *.inc set filetype=php") --treat .inc files as php
