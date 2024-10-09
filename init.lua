@@ -263,7 +263,7 @@ require("lualine").setup({
       function()
         return "%="
       end,
-      "filename",
+      { "filename", path=1 },
       { getWords },
     },
     lualine_x = { "g:testing_status", "filetype" },
