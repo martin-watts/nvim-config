@@ -10,9 +10,6 @@ g.mapleader = ","
 -- Plugins
 require("plugins")
 
--- Do not source the default filetype.vim
-vim.g.did_load_filetypes = 1
-
 require("nvim-tree").setup()
 
 require("Comment").setup()

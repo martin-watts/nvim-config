@@ -19,8 +19,6 @@ return require("packer").startup(function()
 
   use("numToStr/Comment.nvim")
 
-  use("nathom/filetype.nvim")
-
   use("lewis6991/gitsigns.nvim")
 
   use("phaazon/hop.nvim")
@@ -36,7 +34,6 @@ return require("packer").startup(function()
   use("kyazdani42/nvim-tree.lua")
   use("nvim-treesitter/nvim-treesitter")
   use("windwp/nvim-ts-autotag")
-  use("p00f/nvim-ts-rainbow")
   use("kyazdani42/nvim-web-devicons")
   use("mhartington/formatter.nvim")
 
