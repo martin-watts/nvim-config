@@ -4,6 +4,14 @@ local cmd = vim.cmd -- to execute Vim commands e.g. cmd('pwd')
 local fn = vim.fn -- to call Vim functions e.g. fn.bufnr()
 local g = vim.g -- a table to access global variables
 
+
+-- Tell nvim where Python is:
+if vim.fn.has('mac') > 0 then
+  g.python3_host_prog = "$HOME/homebrew/bin/python3"
+else
+  g.python3_host_prog = "python3"
+end
+
 -- Map leader to space
 g.mapleader = ","
 
@@ -63,14 +71,14 @@ capabilities.textDocument.completion.completionItem.resolveSupport = {
   },
 }
 
--- Different machine VAR for office
---local envMachine = os.getenv("MACHINE")
--- if envMachine == "work" then
-machineCmd =
-  "/System/Volumes/Data/usr/local/lib/node_modules/vscode-langservers-extracted/bin/vscode-css-language-server"
--- else
---  machineCmd = "vscode-css-language-server"
--- end
+local machineCmd = ''
+
+if vim.fn.has('mac') > 0 then
+  machineCmd =
+    "/System/Volumes/Data/usr/local/lib/node_modules/vscode-langservers-extracted/bin/vscode-css-language-server"
+else
+  machineCmd = "vscode-css-language-server"
+end
 
 local on_attach = function(client, bufnr)
   local function buf_set_keymap(...)
@@ -127,12 +135,14 @@ require("lspconfig").cssls.setup({
   on_attach = on_attach,
 })
 
+local node_version = 'v20.0.9'
+
 require("lspconfig").ts_ls.setup({
   capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
   on_attach = on_attach,
   filetypes = { "javascript", "typescript", "typescriptreact", "typescript.tsx" },
   cmd = {
-    "/Users/martin.watts/.nvm/versions/node/v20.9.0/bin/typescript-language-server",
+    "$HOME/.nvm/versions/node/" .. node_version .. "/bin/typescript-language-server",
     "--stdio",
   }
 })
@@ -387,8 +397,7 @@ require('formatter').setup {
           exe = 'php-cs-fixer',
           args = {
             'fix',
-            '--config',
-            '/users/martinw/.php-cs-fixer.php'
+            '--config=$HOME/.php-cs-fixer.php'
           },
           stdin = true
         }
@@ -457,4 +466,5 @@ require('ufo').setup({
         return {'treesitter', 'indent'}
     end
 })
+
 cmd("au BufNewFile,BufRead *.inc set filetype=php") --treat .inc files as php
