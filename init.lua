@@ -40,6 +40,7 @@ require("gitsigns").setup({
 })
 
 -- Session
+vim.o.sessionoptions="blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
 local sessionopts = {
   log_level = "info",
   auto_session_enable_last_session = true,
