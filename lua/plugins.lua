@@ -63,4 +63,5 @@ return require("packer").startup(function()
   use("puremourning/vimspector")
   use("Mofiqul/vscode.nvim")
   use("vim-scripts/dbext.vim")
+  use {'kevinhwang91/nvim-ufo', requires = 'kevinhwang91/promise-async'}
 end)

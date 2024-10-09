@@ -443,3 +443,9 @@ cmp.setup({
 })
 
 require("mappings")
+
+require('ufo').setup({
+    provider_selector = function(bufnr, filetype, buftype)
+        return {'treesitter', 'indent'}
+    end
+})
