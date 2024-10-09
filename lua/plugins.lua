@@ -15,6 +15,7 @@ return require("packer").startup(function()
   use("winston0410/cmd-parser.nvim")
   use("f3fora/cmp-spell")
   use("hrsh7th/cmp-vsnip")
+  use("L3MON4D3/LuaSnip")
 
   use("numToStr/Comment.nvim")
 
