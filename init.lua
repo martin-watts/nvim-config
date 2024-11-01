@@ -4,21 +4,19 @@ local cmd = vim.cmd -- to execute Vim commands e.g. cmd('pwd')
 local fn = vim.fn -- to call Vim functions e.g. fn.bufnr()
 local g = vim.g -- a table to access global variables
 
-
 -- Tell nvim where Python is:
-if vim.fn.has('mac') > 0 then
+if vim.fn.has("mac") > 0 then
   g.python3_host_prog = "$HOME/homebrew/bin/python3"
 else
   g.python3_host_prog = "python3"
 end
 
--- Map leader to space
-g.mapleader = ","
+configPath = vim.fs.dirname(debug.getinfo(1).short_src) .. "/lua/config"
 
--- Plugins
-require("plugins")
-
-require("nvim-tree").setup()
+-- Plugin config
+for _, file in ipairs(vim.fn.readdir(configPath, [[v:val =~ '\.lua$']])) do
+  require("config." .. file:gsub("%.lua", ""))
+end
 
 require("Comment").setup()
 
@@ -30,33 +28,85 @@ require("nvim-treesitter.configs").setup({
     extended_mode = true, -- Also highlight non-bracket delimiters like html tags, boolean or table: lang -> boolean
     max_file_lines = nil, -- Do not enable for files with more than n lines, int
   },
-  autotag = {
-    enable = true,
-    filetypes = {
-      "html",
-      "javascript",
-      "typescript",
-      "markdown",
-    },
+})
+
+require("rainbow-delimiters.setup").setup()
+
+require("nvim-ts-autotag").setup({
+  opts = {
+    -- Defaults
+    enable_close = true, -- Auto close tags
+    enable_rename = true, -- Auto rename pairs of tags
+    enable_close_on_slash = true, -- Auto close on trailing />
   },
 })
 
 -- gitsigns setup
 require("gitsigns").setup({
   numhl = true,
-  signcolumn = false,
+  on_attach = function(bufnr)
+    local gitsigns = require("gitsigns")
+
+    local function map(mode, l, r, opts)
+      opts = opts or {}
+      opts.buffer = bufnr
+      vim.keymap.set(mode, l, r, opts)
+    end
+
+    -- Navigation
+    map("n", "]c", function()
+      if vim.wo.diff then
+        vim.cmd.normal({ "]c", bang = true })
+      else
+        gitsigns.nav_hunk("next")
+      end
+    end)
+
+    map("n", "[c", function()
+      if vim.wo.diff then
+        vim.cmd.normal({ "[c", bang = true })
+      else
+        gitsigns.nav_hunk("prev")
+      end
+    end)
+
+    -- Actions
+    map("n", "<leader>hs", gitsigns.stage_hunk)
+    map("n", "<leader>hr", gitsigns.reset_hunk)
+    map("v", "<leader>hs", function()
+      gitsigns.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
+    end)
+    map("v", "<leader>hr", function()
+      gitsigns.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
+    end)
+    map("n", "<leader>hS", gitsigns.stage_buffer)
+    map("n", "<leader>hu", gitsigns.undo_stage_hunk)
+    map("n", "<leader>hR", gitsigns.reset_buffer)
+    map("n", "<leader>hp", gitsigns.preview_hunk)
+    map("n", "<leader>hb", function()
+      gitsigns.blame_line({ full = true })
+    end)
+    map("n", "<leader>tb", gitsigns.toggle_current_line_blame)
+    map("n", "<leader>hd", gitsigns.diffthis)
+    map("n", "<leader>hD", function()
+      gitsigns.diffthis("~")
+    end)
+    map("n", "<leader>td", gitsigns.toggle_deleted)
+
+    -- Text object
+    map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>")
+  end,
 })
 
 -- Session
-vim.o.sessionoptions="blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+vim.o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
 local sessionopts = {
+  auto_restore = true,
+  auto_restore_last_session = true,
+  auto_save = true,
+  enabled = true,
   log_level = "info",
-  auto_session_enable_last_session = true,
-  auto_session_root_dir = vim.fn.stdpath("data") .. "/sessions/",
-  auto_session_enabled = true,
-  auto_save_enabled = true,
-  auto_restore_enabled = true,
-  auto_session_suppress_dirs = nil,
+  root_dir = vim.fn.stdpath("data") .. "/sessions/",
 }
 require("auto-session").setup(sessionopts)
 
@@ -71,9 +121,9 @@ capabilities.textDocument.completion.completionItem.resolveSupport = {
   },
 }
 
-local machineCmd = ''
+local machineCmd = ""
 
-if vim.fn.has('mac') > 0 then
+if vim.fn.has("mac") > 0 then
   machineCmd =
     "/System/Volumes/Data/usr/local/lib/node_modules/vscode-langservers-extracted/bin/vscode-css-language-server"
 else
@@ -135,16 +185,16 @@ require("lspconfig").cssls.setup({
   on_attach = on_attach,
 })
 
-local node_version = 'v20.0.9'
+local node_version = "v20.0.9"
 
 require("lspconfig").ts_ls.setup({
   capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
   on_attach = on_attach,
   filetypes = { "javascript", "typescript", "typescriptreact", "typescript.tsx" },
   cmd = {
-    "$HOME/.nvm/versions/node/" .. node_version .. "/bin/typescript-language-server",
+    "typescript-language-server",
     "--stdio",
-  }
+  },
 })
 
 require("lspconfig").intelephense.setup({
@@ -162,7 +212,7 @@ require("lspconfig").intelephense.setup({
   on_attach = on_attach,
 })
 
-require("lspconfig").pyright.setup({})
+require("lspconfig").basedpyright.setup({})
 
 -- LSP Prevents inline buffer annotations
 -- vim.diagnostic.open_float(nil, { source = 'always' })
@@ -171,24 +221,28 @@ require("lspconfig").pyright.setup({})
 -- })
 
 -- LSP Saga config & keys https://github.com/glepnir/lspsaga.nvim
-local saga = require("lspsaga")
-saga.init_lsp_saga({
-  code_action_icon = " ",
-  definition_preview_icon = "  ",
-  diagnostic_header_icon = "   ",
-  error_sign = " ",
-  finder_definition_icon = "  ",
-  finder_reference_icon = "  ",
-  hint_sign = "⚡",
-  infor_sign = "",
-  warn_sign = "",
-})
+local saga = require("lspsaga").setup({})
+
+-- saga.init_lsp_saga({
+--  code_action_icon = " ",
+--  definition_preview_icon = "  ",
+--  diagnostic_header_icon = "   ",
+--  error_sign = " ",
+--  finder_definition_icon = "  ",
+--  finder_reference_icon = "  ",
+--  hint_sign = "⚡",
+--  infor_sign = "",
+--  warn_sign = "",
+-- })
 
 -- Setup treesitter
 local ts = require("nvim-treesitter.configs")
-ts.setup({ ensure_installed = { "bash", "css", "html", "lua", "php", "python", "rust", "typescript", "tsx", "yaml" }, highlight = { enable = true } })
+ts.setup({
+  ensure_installed = { "bash", "css", "html", "lua", "php", "python", "rust", "typescript", "tsx", "yaml" },
+  highlight = { enable = true },
+})
 
-local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
 parser_config.tsx.filetype_to_parsername = { "javascript", "tsx" }
 
 -- vscode colour scheme setup
@@ -273,7 +327,7 @@ require("lualine").setup({
       function()
         return "%="
       end,
-      { "filename", path=1 },
+      { "filename", path = 1 },
       { getWords },
     },
     lualine_x = { "g:testing_status", "filetype" },
@@ -307,118 +361,63 @@ g.markdown_fenced_languages = { "html", "javascript", "typescript", "css", "scss
 -- Let me know about trouble
 require("trouble").setup()
 
--- Telescope Global remapping
-local action_state = require("telescope.actions.state")
-local actions = require("telescope.actions")
-require("telescope").setup({
-  defaults = {
-    winblend = 20,
-    sorting_strategy = "descending",
-    layout_strategy = "horizontal",
-    mappings = {
-      i = {
-        ["<esc>"] = actions.close,
-        ["<C-q>"] = actions.smart_send_to_qflist + actions.open_qflist,
-      },
-    },
-  },
-  pickers = {
-    buffers = {
-      sort_lastused = true,
-      mappings = {
-        i = {
-          ["<C-w>"] = "delete_buffer",
-        },
-        n = {
-          ["<C-w>"] = "delete_buffer",
-        },
-      },
-    },
-    -- https://gitter.im/nvim-telescope/community?at=6113b874025d436054c468e6 Fabian David Schmidt
-    find_files = {
-      hidden = true,
-      on_input_filter_cb = function(prompt)
-        local find_colon = string.find(prompt, ":")
-        if find_colon then
-          local ret = string.sub(prompt, 1, find_colon - 1)
-          vim.schedule(function()
-            local prompt_bufnr = vim.api.nvim_get_current_buf()
-            local picker = action_state.get_current_picker(prompt_bufnr)
-            local lnum = tonumber(prompt:sub(find_colon + 1))
-            if type(lnum) == "number" then
-              local win = picker.previewer.state.winid
-              local bufnr = picker.previewer.state.bufnr
-              local line_count = vim.api.nvim_buf_line_count(bufnr)
-              vim.api.nvim_win_set_cursor(win, { math.max(1, math.min(lnum, line_count)), 0 })
-            end
-          end)
-          return { prompt = ret }
-        end
-      end,
-      attach_mappings = function()
-        actions.select_default:enhance({
-          post = function()
-            -- if we found something, go to line
-            local prompt = action_state.get_current_line()
-            local find_colon = string.find(prompt, ":")
-            if find_colon then
-              local lnum = tonumber(prompt:sub(find_colon + 1))
-              vim.api.nvim_win_set_cursor(0, { lnum, 0 })
-            end
-          end,
-        })
-        return true
-      end,
-    },
+require("conform").setup({
+  log_level = vim.log.levels.TRACE,
+  formatters_by_ft = {
+    lua = { "stylua" },
+    python = { "autopep8" },
+    rust = { "rustfmt", lsp_format = "fallback" },
+    javascript = { "prettierd", "prettier", stop_after_first = true },
+    php = { "php_cs_fixer" },
   },
 })
 
-require("telescope").load_extension("fzy_native")
-require("telescope").load_extension("file_browser")
+function format(args, async, callback)
+  if async then
+    print("async")
+  else
+    print("sync")
+  end
 
+  local range = nil
+  if args.count ~= -1 then
+    local end_line = vim.api.nvim_buf_get_lines(0, args.line2 - 1, args.line2, true)[1]
+    range = {
+      start = { args.line1, 0 },
+      ["end"] = { args.line2, end_line:len() },
+    }
+  end
 
--- Utilities for creating configurations
-local util = require "formatter.util"
+  local async = (args.async == nil and true or args.async)
+  require("conform").format({ async = async, lsp_format = "fallback", range = range }, callback)
+end
 
--- Provides the Format and FormatWrite commands
-require('formatter').setup {
-  -- All formatter configurations are opt-in
-  filetype = {
-    lua = {
-      -- Pick from defaults:
-      require('formatter.filetypes.lua').stylua,
-    },
-    json = {
-      require('formatter.filetypes.json').prettier,
-    },
-    php = {
-      function()
-        return {
-          exe = 'php-cs-fixer',
-          args = {
-            'fix',
-            '--config=$HOME/.php-cs-fixer.php'
-          },
-          stdin = true
-        }
-      end
-    },
-    python = {
-      require('formatter.filetypes.python').autopep8,
-    },
-  }
-}
+vim.api.nvim_create_user_command("Format", function(args, async)
+  format(args, true)
+end, { range = true })
+
+vim.api.nvim_create_user_command("FormatWrite", function(args)
+  format(args, false, function()
+    cmd("w")
+  end)
+end, { range = true })
 
 -------------------- COMMANDS ------------------------------
 cmd("au TextYankPost * lua vim.highlight.on_yank {on_visual = true}") -- disabled in visual mode
 
 local lspkind = require("lspkind")
+lspkind.init({
+  symbol_map = {
+    Text = "T",
+  },
+})
+
 local cmp = require("cmp")
 
 cmp.setup({
   snippet = {
     expand = function(args)
-      require('luasnip').lsp_expand(args.body)
+      vim.fn["vsnip#anonymous"](args.body)
     end,
   },
   mapping = {
@@ -428,7 +427,7 @@ cmp.setup({
     ["<C-e>"] = cmp.mapping.close(),
     ["<CR>"] = cmp.mapping.confirm({
       behavior = cmp.ConfirmBehavior.Replace,
-      select = false
+      select = false,
     }),
   },
   completion = {
@@ -455,16 +454,16 @@ cmp.setup({
     ghost_text = true,
   },
   view = {
-    entries = "native"
-  }
+    entries = "native",
+  },
 })
 
 require("mappings")
 
-require('ufo').setup({
-    provider_selector = function(bufnr, filetype, buftype)
-        return {'treesitter', 'indent'}
-    end
+require("ufo").setup({
+  provider_selector = function(bufnr, filetype, buftype)
+    return { "treesitter", "indent" }
+  end,
 })
 
 cmd("au BufNewFile,BufRead *.inc set filetype=php") --treat .inc files as php

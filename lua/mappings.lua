@@ -1,3 +1,5 @@
+local km = vim.keymap
+
 local function map(mode, lhs, rhs, opts)
   local options = { noremap = true }
   if opts then
@@ -78,29 +80,70 @@ map("n", "<esc>", ":noh<cr><esc>", { silent = true })
 -- Easy add date/time
 map("n", "<Leader>t", "\"=strftime('%c')<CR>Pa", { silent = true })
 
-map(
+local function open_oil_preview(tries)
+  if tries > 5 then
+    return
+  end
+
+  local oil = require("oil")
+  if oil.get_cursor_entry() == nil then
+    vim.defer_fn(function()
+      open_oil_preview(tries + 1)
+    end, 100)
+  else 
+    oil.open_preview()
+  end
+end
+
+local function open_oil()
+  local oil = require("oil")
+  oil.open()
+  open_oil_preview(0)
+end
+
+km.set("n", "<leader>f", open_oil, { desc = "Open Oil Filebrowser" })
+
+km.set("n", "<leader>p", require("fzf-lua").files, { desc = "Fzf Files" })
+
+km.set("n", "<leader>rg", require("fzf-lua").registers, { desc = "Registers" })
+
+km.set("n", "<leader>m", require("fzf-lua").marks, { desc = "Marks" })
+
+km.set("n", "<leader>g", require("fzf-lua").live_grep, { desc = "Fzf Grep" })
+
+km.set("n", "<leader>b", require("fzf-lua").buffers, { desc = "Fzf Buffers" })
+
+km.set("n", "<leader>j", require("fzf-lua").helptags, { desc = "Help Tags" })
+
+km.set("n", "<leader>gc", require("fzf-lua").git_bcommits, { desc = "Browse File Commits" })
+
+km.set("n", "<leader>gs", require("fzf-lua").git_status, { desc = "Git Status" })
+
+km.set("n", "<leader>s", require("fzf-lua").spell_suggest, { desc = "Spelling Suggestions" })
+
+km.set("n", "<leader>cj", require("fzf-lua").lsp_definitions, { desc = "Jump to Definition" })
+
+km.set(
   "n",
-  "<leader>p",
-  '<cmd>lua require("telescope.builtin").find_files(require("telescope.themes").get_dropdown({}))<cr>'
+  "<leader>r",
+  ":lua require'fzf-lua'.lsp_document_symbols({winopts = {preview={wrap='wrap'}}})<cr>",
+  { desc = "Document Symbols" }
 )
-map("n", "<leader>r", '<cmd>lua require("telescope.builtin").treesitter()<cr>')
-map(
+
+km.set("n", "<leader>cr", require("fzf-lua").lsp_references, { desc = "LSP References" })
+
+km.set(
   "n",
-  "<leader>g",
-  '<cmd>lua require("telescope.builtin").live_grep(require("telescope.themes").get_dropdown({}))<cr>'
+  "<leader>cd",
+  ":lua require'fzf-lua'.diagnostics_document({fzf_opts = { ['--wrap'] = true }})<cr>",
+  { desc = "Document Diagnostics" }
 )
-map("n", "<leader>b", '<cmd>lua require("telescope.builtin").buffers(require("telescope.themes").get_dropdown({}))<cr>')
-map("n", "<leader>j", '<cmd>lua require("telescope.builtin").help_tags()<cr>')
-map(
+
+km.set(
   "n",
-  "<leader>f",
-  '<cmd>lua require("telescope").extensions.file_browser.file_browser({ path = "%:p:h", grouped = true, select_buffer = true, hidden = true })<cr>'
-)
-map("n", "<leader>s", '<cmd>lua require("telescope.builtin").spell_suggest()<cr>')
-map(
-  "n",
-  "<leader>i",
-  '<cmd>lua require("telescope.builtin").git_status(require("telescope.themes").get_dropdown({}))<cr>'
+  "<leader>ca",
+  ":lua require'fzf-lua'.lsp_code_actions({ winopts = {relative='cursor',row=1.01, col=0, height=0.2, width=0.4} })<cr>",
+  { desc = "Code Actions" }
 )
 
 -- Easier split mappings
